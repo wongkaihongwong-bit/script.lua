@@ -1,0 +1,239 @@
+-- [[ 独家餐厅3最强辅助 - 黄金定制版 ]] --
+
+-- 1. 销毁可能已存在的旧面板，防止重复加载卡顿
+if game.CoreGui:FindFirstChild("GoldTycoonMenu") then
+    game.CoreGui.GoldTycoonMenu:Destroy()
+end
+
+-- 2. 创建主画布 (ScreenGui)
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "GoldTycoonMenu"
+ScreenGui.Parent = game.CoreGui
+ScreenGui.ResetOnSpawn = false
+
+-- 3. 创建黄金主面板框架 (Frame)
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 230, 0, 340) -- 调大尺寸以容纳新按钮
+MainFrame.Position = UDim2.new(0.3, 0, 0.2, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(45, 35, 15) -- 暗金底色
+MainFrame.BorderSizePixel = 2
+MainFrame.BorderColor3 = Color3.fromRGB(255, 215, 0) -- 纯金边框
+MainFrame.Active = true
+MainFrame.Draggable = true -- 允许在手机屏幕上自由拖动面板
+MainFrame.Parent = ScreenGui
+
+-- 给面板添加圆角
+local Corner = Instance.new("UICorner")
+Corner.CornerRadius = UDim.new(0, 12)
+Corner.Parent = MainFrame
+
+-- 4. 黄金标题栏
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.BackgroundColor3 = Color3.fromRGB(65, 50, 20) -- 稍微亮一点的金色背景
+Title.Text = " ✨ 独家餐厅3最强辅助"
+Title.TextColor3 = Color3.fromRGB(255, 215, 0) -- 纯金字体
+Title.TextSize = 16
+Title.Font = Enum.Font.SourceSansBold
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = MainFrame
+
+local TitleCorner = Instance.new("UICorner")
+TitleCorner.CornerRadius = UDim.new(0, 12)
+TitleCorner.Parent = Title
+
+-- 5. 关闭按钮 (X)
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0, 30, 0, 30)
+CloseBtn.Position = UDim2.new(1, -35, 0, 5)
+CloseBtn.BackgroundTransparency = 1
+CloseBtn.Text = "X"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+CloseBtn.TextSize = 18
+CloseBtn.Font = Enum.Font.SourceSansBold
+CloseBtn.Parent = MainFrame
+
+-- 6. 收缩/展开按钮 (-)
+local ShrinkBtn = Instance.new("TextButton")
+ShrinkBtn.Size = UDim2.new(0, 30, 0, 30)
+ShrinkBtn.Position = UDim2.new(1, -65, 0, 5)
+ShrinkBtn.BackgroundTransparency = 1
+ShrinkBtn.Text = "—"
+ShrinkBtn.TextColor3 = Color3.fromRGB(255, 215, 0)
+ShrinkBtn.TextSize = 14
+ShrinkBtn.Parent = MainFrame
+
+-- 内容容器（用于收缩时隐藏里面的按钮）
+local ContentFrame = Instance.new("Frame")
+ContentFrame.Size = UDim2.new(1, 0, 1, -40)
+ContentFrame.Position = UDim2.new(0, 0, 0, 40)
+ContentFrame.BackgroundTransparency = 1
+ContentFrame.Parent = MainFrame
+
+-- ==========================================
+-- 功能按钮配置 (功能开关变量)
+-- ==========================================
+local AutoCollect = false
+local AutoClean = false
+local AutoCook = false
+local AutoServe = false
+local IsShrunk = false
+
+-- 创建黄金样式按钮的函数
+local function createGoldButton(name, text, positionY)
+    local Btn = Instance.new("TextButton")
+    Btn.Name = name
+    Btn.Size = UDim2.new(0, 190, 0, 40)
+    Btn.Position = UDim2.new(0, 20, 0, positionY)
+    Btn.BackgroundColor3 = Color3.fromRGB(80, 65, 30) -- 按钮暗金底色
+    Btn.BorderSizePixel = 1
+    Btn.BorderColor3 = Color3.fromRGB(218, 165, 32) -- 闪金边框
+    Btn.Text = text .. " [关]"
+    Btn.TextColor3 = Color3.fromRGB(255, 245, 200)
+    Btn.TextSize = 14
+    Btn.Font = Enum.Font.SourceSansBold
+    Btn.Parent = ContentFrame
+    
+    local BtnCorner = Instance.new("UICorner")
+    BtnCorner.CornerRadius = UDim.new(0, 6)
+    BtnCorner.Parent = Btn
+    return Btn
+end
+
+-- 生成4大核心功能按钮
+local CollectBtn = createGoldButton("CollectBtn", "自动收集金钱", 15)
+local CleanBtn   = createGoldButton("CleanBtn", "自动清理盘子", 65)
+local CookBtn    = createGoldButton("CookBtn", "自动制作料理", 115)
+local ServeBtn   = createGoldButton("ServeBtn", "自动帮忙上菜", 165)
+
+-- 底部黄金装饰提示
+local TipLabel = Instance.new("TextLabel")
+TipLabel.Size = UDim2.new(1, -20, 0, 40)
+TipLabel.Position = UDim2.new(0, 10, 0, 230)
+TipLabel.BackgroundTransparency = 1
+TipLabel.Text = "✨ 黄金定制版：开启功能即可全自动挂机赚钱钻石"
+TipLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
+TipLabel.TextSize = 11
+TipLabel.TextWrapped = true
+TipLabel.Parent = ContentFrame
+
+-- ==========================================
+-- 按钮控制事件逻辑
+-- ==========================================
+
+-- 关闭面板
+CloseBtn.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
+
+-- 收缩与展开面板
+ShrinkBtn.MouseButton1Click:Connect(function()
+    if IsShrunk then
+        MainFrame:TweenSize(UDim2.new(0, 230, 0, 340), "Out", "Quint", 0.3, true)
+        ContentFrame.Visible = true
+        ShrinkBtn.Text = "—"
+        IsShrunk = false
+    else
+        MainFrame:TweenSize(UDim2.new(0, 230, 0, 40), "Out", "Quint", 0.3, true)
+        ContentFrame.Visible = false
+        ShrinkBtn.Text = "口"
+        IsShrunk = true
+    end
+end)
+
+-- 统一开关颜色切换逻辑
+local function toggleVisual(btn, state, text)
+    if state then
+        btn.Text = text .. " [开]"
+        btn.BackgroundColor3 = Color3.fromRGB(184, 134, 11) -- 激活时变成亮金/深金
+        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    else
+        btn.Text = text .. " [关]"
+        btn.BackgroundColor3 = Color3.fromRGB(80, 65, 30)
+        btn.TextColor3 = Color3.fromRGB(255, 245, 200)
+    end
+end
+
+CollectBtn.MouseButton1Click:Connect(function() AutoCollect = not AutoCollect toggleVisual(CollectBtn, AutoCollect, "自动收集金钱") end)
+CleanBtn.MouseButton1Click:Connect(function() AutoClean = not AutoClean toggleVisual(CleanBtn, AutoClean, "自动清理盘子") end)
+CookBtn.MouseButton1Click:Connect(function() AutoCook = not AutoCook toggleVisual(CookBtn, AutoCook, "自动制作料理") end)
+ServeBtn.MouseButton1Click:Connect(function() AutoServe = not AutoServe toggleVisual(ServeBtn, AutoServe, "自动帮忙上菜") end)
+
+-- ==========================================
+-- 核心挂机驱动逻辑（每0.5秒循环检测）
+-- ==========================================
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+task.spawn(function()
+    while true do
+        task.wait(0.5)
+        
+        -- 获取玩家本人的餐厅地块
+        local myTycoon = workspace.Tycoons:FindFirstChild(LocalPlayer.Name .. "'s Restaurant") or workspace.Tycoons:FindFirstChild(LocalPlayer.Name)
+        
+        if myTycoon then
+            
+            -- 1. 自动收集金钱
+            if AutoCollect then
+                for _, obj in pairs(myTycoon:GetDescendants()) do
+                    if obj.Name == "Coin" or obj.Name == "Cash" or obj.Name == "Bill" then
+                        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                            obj.CFrame = LocalPlayer.Character.HumanoidRootPart.CFrame
+                        end
+                    end
+                end
+            end
+            
+            -- 2. 自动清理盘子
+            if AutoClean then
+                for _, obj in pairs(myTycoon:GetDescendants()) do
+                    if obj.Name == "DirtyPlate" or obj.Name == "Plate" then
+                        local sink = myTycoon:FindFirstChild("Sink") or myTycoon:FindFirstChild("Dishwasher") or myTycoon:FindFirstChild("Kitchen")
+                        if sink then
+                            obj.CFrame = sink.CFrame
+                        end
+                    end
+                end
+            end
+            
+            -- 3. 自动制作料理（寻找厨房未完成的食物并触发完成）
+            if AutoCook then
+                for _, obj in pairs(myTycoon:GetDescendants()) do
+                    -- 寻找正在炉灶上制作或等待加热的食物对象
+                    if obj.Name == "CookingFood" or obj.Name == "Order" or obj.Name == "Stove" then
+                        -- 触发游戏内灶台或料理的进度事件
+                        local duration = obj:FindFirstChild("Duration") or obj:FindFirstChild("Progress")
+                        if duration and duration:IsA("ValueBase") then
+                            duration.Value = duration.Value + 10 -- 加快进度
+                        end
+                        -- 尝试寻找游戏内网络事件直接完成烹饪
+                        local network = game:GetService("ReplicatedStorage"):FindFirstChild("Network") or game:GetService("ReplicatedStorage"):FindFirstChild("Events")
+                        if network and network:FindFirstChild("Cook") then
+                            network.Cook:FireServer(obj)
+                        end
+                    end
+                end
+            end
+            
+            -- 4. 自动帮忙上菜给客人
+            if AutoServe then
+                for _, obj in pairs(myTycoon:GetDescendants()) do
+                    -- 寻找已经做好的食物 (Food / Meal)
+                    if obj.Name == "ReadyFood" or obj.Name == "Meal" or obj.Name == "Food" then
+                        -- 寻找大厅里点了这道菜对应的顾客或桌子
+                        for _, customer in pairs(myTycoon:GetDescendants()) do
+                            if customer.Name == "Customer" and customer:FindFirstChild("Order") then
+                                -- 瞬间将食物传送到顾客面前完成服务
+                                obj.CFrame = customer.CFrame
+                                break
+                            end
+                        end
+                    end
+                end
+            end
+            
+        end
+    end
+end)
